@@ -1,6 +1,9 @@
 from huggingface_hub import InferenceClient
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_community.chat_models.gigachat import GigaChat
+import openai
+import anthropic
+import google.generativeai as genai
 
 class GemmaAgent() :
     def __init__(self, key) :
@@ -71,3 +74,42 @@ class UserAgent() :
         print(user_prompt)
         res = input('Print your sentence: ')
         return res
+
+class ChatGPTAgent() :
+    def __init__(self, key) :
+        openai.api_key = key
+    def query(self, system_prompt, user_prompt) :
+        messages = [
+            { "role": "user", "content": user_prompt },
+            { "role": "system", "content": system_prompt }
+            ]
+        chat = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo", messages=messages
+        )
+        return chat.choices[0].message.content
+    
+class ClaudeAgent() :
+    def __init__(self, key) :
+        self.client = anthropic.Anthropic(
+            # defaults to os.environ.get("ANTHROPIC_API_KEY")
+            api_key=key,
+        )
+    def query(self, system_prompt, user_prompt) :
+        response = self.client.messages.create(
+            model="claude-3-5-sonnet-20241022",
+            max_tokens=2048,
+            system=system_prompt,
+            messages=[
+                {"role": "user", "content": user_prompt}
+            ]
+        )
+        return response.content
+    
+class GeminiAgent() :
+    def __init__(self, key) :
+        genai.configure(api_key=key)
+    def query(self, system_prompt, user_prompt) :
+        model = genai.GenerativeModel('gemini-1.0-pro-latest',
+                                      system_instruction=system_prompt)
+        response = model.generate_content(user_prompt)
+        return response.text
